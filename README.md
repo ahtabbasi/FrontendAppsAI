@@ -23,6 +23,7 @@ This repository is designed as a centralized hub for multiple frontend-only web 
 | :--- | :--- | :--- | :--- | :--- |
 | **Demo App** | Showcase | Vanilla HTML5 / CSS / ES6 | `demo-app/` | [Launch App](https://ahtabbasi.github.io/FrontendAppsAI/demo-app/) |
 | **Counter App** | Utility | Vanilla HTML5 / CSS3 / JS | `counter-app/` | [Launch App](https://ahtabbasi.github.io/FrontendAppsAI/counter-app/) |
+| **Cleaning Tracker** | Productivity | PWA / ES6 / Cookies / Cache | `cleaning-tracker/` | [Launch App](https://ahtabbasi.github.io/FrontendAppsAI/cleaning-tracker/) |
 
 ---
 
