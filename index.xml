@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<portal>
+  <meta>
+    <title>Frontend Apps Directory</title>
+    <description>A curated collection of standalone frontend web applications hosted on GitHub Pages.</description>
+    <repository>https://github.com/ahtabbasi/FrontendAppsAI</repository>
+    <baseUrl>https://ahtabbasi.github.io/FrontendAppsAI/</baseUrl>
+  </meta>
+  <apps>
+    <app id="demo-app">
+      <name>Demo App</name>
+      <category>Showcase</category>
+      <technology>HTML5 / Vanilla CSS / ES6 JavaScript</technology>
+      <path>demo-app/</path>
+      <url>demo-app/index.html</url>
+      <description>Interactive showcase app demonstrating front-end capabilities, state manipulation, and UI animations.</description>
+    </app>
+    <app id="counter-app">
+      <name>Counter &amp; Tally App</name>
+      <category>Utility</category>
+      <technology>HTML5 / CSS3 / JavaScript</technology>
+      <path>counter-app/</path>
+      <url>counter-app/index.html</url>
+      <description>Simple interactive counter utility with increment, decrement, reset, step configuration, and local storage persistence.</description>
+    </app>
+  </apps>
+</portal>

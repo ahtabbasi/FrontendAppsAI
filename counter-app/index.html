@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Counter &amp; Tally App</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --accent-danger: #f87171;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .container {
+      background: var(--card);
+      border: 1px solid #334155;
+      padding: 2.5rem;
+      border-radius: 1rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    p {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+    .count-display {
+      font-size: 4.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: var(--text);
+      margin: 1.5rem 0;
+      line-height: 1;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: #334155;
+      color: var(--text);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      cursor: pointer;
+      min-width: 60px;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #475569;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+    }
+    .btn-primary:hover {
+      background: #7dd3fc;
+    }
+    .btn-danger {
+      background: #7f1d1d;
+      color: var(--accent-danger);
+    }
+    .btn-danger:hover {
+      background: #991b1b;
+    }
+    .step-config {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    .step-config input {
+      width: 60px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: var(--text);
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.25rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .back-link {
+      display: block;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Counter App</h1>
+    <p>A client-side tally and counter frontend application.</p>
+
+    <div id="countDisplay" class="count-display">0</div>
+
+    <div class="step-config">
+      <label for="stepInput">Step size:</label>
+      <input type="number" id="stepInput" value="1" min="1" max="1000" />
+    </div>
+
+    <div class="controls">
+      <button id="decBtn" class="btn">&#8722;</button>
+      <button id="incBtn" class="btn btn-primary">+</button>
+      <button id="resetBtn" class="btn btn-danger">&#8635;</button>
+    </div>
+
+    <a href="../index.xml" class="back-link">&#8592; Back to Portal Directory</a>
+  </div>
+
+  <script>
+    let count = parseInt(localStorage.getItem('counter_val') || '0', 10);
+    const display = document.getElementById('countDisplay');
+    const stepInput = document.getElementById('stepInput');
+    const incBtn = document.getElementById('incBtn');
+    const decBtn = document.getElementById('decBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function updateDisplay() {
+      display.textContent = count;
+      localStorage.setItem('counter_val', count);
+    }
+
+    incBtn.addEventListener('click', () => {
+      const step = parseInt(stepInput.value, 10) || 1;
+      count += step;
+      updateDisplay();
+    });
+
+    decBtn.addEventListener('click', () => {
+      const step = parseInt(stepInput.value, 10) || 1;
+      count -= step;
+      updateDisplay();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      count = 0;
+      updateDisplay();
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>

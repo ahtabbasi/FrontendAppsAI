@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo App</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .container {
+      background: var(--card);
+      border: 1px solid #334155;
+      padding: 2.5rem;
+      border-radius: 1rem;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    .interactive-box {
+      background: #0f172a;
+      border: 1px dashed #475569;
+      border-radius: 0.5rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      font-size: 1.25rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .btn {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0.25rem;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .back-link {
+      display: block;
+      margin-top: 1.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Demo App</h1>
+    <p>A lightweight showcase frontend application hosted on GitHub Pages.</p>
+    <div id="output" class="interactive-box">
+      Click the button below!
+    </div>
+    <div>
+      <button id="actionBtn" class="btn">Generate Color &amp; Quote</button>
+    </div>
+    <a href="../index.xml" class="back-link">&#8592; Back to Portal Directory</a>
+  </div>
+
+  <script>
+    const quotes = [
+      "Simplicity is prerequisite for reliability. - Edsger W. Dijkstra",
+      "Code is like humor. When you have to explain it, it's bad. - Cory House",
+      "Make it work, make it right, make it fast. - Kent Beck",
+      "Perfection is achieved when there is nothing left to take away. - Antoine de Saint-Exupéry"
+    ];
+    const colors = ["#38bdf8", "#34d399", "#f472b6", "#fbbf24", "#a78bfa"];
+
+    const output = document.getElementById("output");
+    const btn = document.getElementById("actionBtn");
+
+    btn.addEventListener("click", () => {
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      output.textContent = randomQuote;
+      output.style.borderColor = randomColor;
+      output.style.color = randomColor;
+    });
+  </script>
+</body>
+</html>
