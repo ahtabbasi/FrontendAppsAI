@@ -1,0 +1,51 @@
+https://docs.google.com/spreadsheets/d/e/2PACX-1vQfpdQZD9w3kREdOGJ4OGvy7gK8DKBzniLpno6vf8O7uY6mfKkf9pQcQxLEQn39VPSLB7IUvFzUKHmH/pub?gid=1369551100&single=true&output=csv,,,,,,,,
+,,,,,,,,
+,,,,Every X days,Last cleaning date,"Over schedule
+(including negative)
+(0 means due today)",Delay days,"Urgency score
+(0 to ∞)"
+Kitchen,Kitchen,FALSE,Vaccum,2,10-Nov,-1,,
+,Kitchen,FALSE,Mop,4,10-Nov,-3,,
+,Kitchen,FALSE,Oven,14,8-Nov,-11,,
+,Kitchen,FALSE,Dustbin,1,11-Nov,-1,,
+,Kitchen,FALSE,Stove,3,11-Nov,-3,,
+,Kitchen,FALSE,Grease,7,8-Nov,-4,,
+,Kitchen,FALSE,Sink,3,,3,3,100
+,Kitchen,FALSE,Shelf,2,,2,2,100
+,Kitchen,FALSE,Walls,15,,15,15,100
+,Kitchen,FALSE,Airfryer,3,11-Nov,-3,,
+,Kitchen,FALSE,Utensils,1,11-Nov,-1,,
+,Kitchen,FALSE,Cupboards,5,,5,5,100
+,Kitchen,FALSE,Spice dust,3,,3,3,100
+,Kitchen,FALSE,Small fridge,7,,7,7,100
+,Kitchen,FALSE,Doors,30,,30,30,100
+,Kitchen,FALSE,Window,15,,15,15,100
+,Kitchen,FALSE,Mesh door,30,8-Nov,-27,,
+Toilet,Toilet,FALSE,Vacuum,3,11-Nov,-3,,
+,Toilet,FALSE,Mop,6,8-Nov,-3,,
+,Toilet,FALSE,Toilet Bowl,5,,5,5,100
+,Toilet,FALSE,Rim hangar,3,,3,3,100
+,Toilet,FALSE,Sink,7,,7,7,100
+,Toilet,FALSE,Mirror,5,,5,5,100
+,Toilet,FALSE,Dustbin,3,10-Nov,-2,,
+Bathroom,Bathroom,FALSE,Vacuum,3,11-Nov,-3,,
+,Bathroom,FALSE,Mop,9,9-Nov,-7,,
+,Bathroom,FALSE,Mirror,3,9-Nov,-1,,
+,Bathroom,FALSE,Sink,7,9-Nov,-5,,
+,Bathroom,FALSE,Taps,7,9-Nov,-5,,
+,Bathroom,FALSE,Bathtub,7,9-Nov,-5,,
+,Bathroom,FALSE,Walls,30,,30,30,100
+,Bathroom,FALSE,Washer,7,,7,7,100
+,Bathroom,FALSE,Cupboards,7,,7,7,100
+,Bathroom,FALSE,Dustbin,3,,3,3,100
+,Bathroom,FALSE,Shower,7,,7,7,100
+Bedroom,Bedroom,FALSE,Vacuum,3,10-Nov,-2,,
+,Bedroom,FALSE,Mop,9,10-Nov,-8,,
+,Bedroom,FALSE,Bedding,7,,7,7,100
+,Bedroom,FALSE,Window,30,,30,30,100
+,Bedroom,FALSE,Cupboard,15,,15,15,100
+Office,Office,FALSE,Vacuum,4,11-Nov,-4,,
+,Office,FALSE,Mop,12,7-Nov,-8,,
+,Office,FALSE,Dusting,5,,5,5,100
+,Office,FALSE,Windows,14,,14,14,100
+,Office,FALSE,Doors,30,,30,30,100

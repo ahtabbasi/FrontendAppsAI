@@ -24,5 +24,13 @@
       <url>counter-app/index.html</url>
       <description>Simple interactive counter utility with increment, decrement, reset, step configuration, and local storage persistence.</description>
     </app>
+    <app id="cleaning-tracker">
+      <name>Cleaning Schedule Tracker</name>
+      <category>Productivity / Household</category>
+      <technology>PWA / Vanilla ES6 / Service Worker / Cookies</technology>
+      <path>cleaning-tracker/</path>
+      <url>cleaning-tracker/index.html</url>
+      <description>Live readonly CSV-driven cleaning schedule with tabs, filters, sorting, mark complete, comments, cookie persistence, and exportable activity logs.</description>
+    </app>
   </apps>
 </portal>

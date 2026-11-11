@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="description" content="Readonly cleaning schedule tracker synced with Google Sheets CSV. Supports tabs, filters, sorting, mark complete, custom notes/comments, cookie persistence, and exportable logs." />
+  <title>CleanTrack - Live Cleaning Schedule</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Offline / Online Notification Banner -->
+  <div id="offlineBanner" class="status-banner hidden">
+    <span>⚠️ You are offline. Showing cached cleaning schedule.</span>
+  </div>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div>
+          <h1>CleanTrack</h1>
+          <p class="subtitle">Live CSV Cleaning Schedule</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="btn btn-icon" title="Sync latest CSV data" aria-label="Sync CSV">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span class="btn-label-desktop">Sync</span>
+        </button>
+        <button id="viewLogsBtn" class="btn btn-icon" title="View & Export Activity Log" aria-label="Activity Logs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span class="btn-label-desktop">History</span>
+          <span id="logBadge" class="badge-pill hidden">0</span>
+        </button>
+        <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Meta Bar with Last Sync & Stats -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Total Tasks</span>
+        <span id="totalTasksCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-card stat-urgent">
+        <span class="stat-label">Urgent / Due</span>
+        <span id="urgentTasksCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-card stat-success">
+        <span class="stat-label">Done Today</span>
+        <span id="completedTasksCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Last Synced</span>
+        <span id="lastSyncTime" class="stat-value-sub">Never</span>
+      </div>
+    </section>
+
+    <!-- Source Info Notification Bar -->
+    <div class="source-banner">
+      <div class="source-info">
+        <span class="source-indicator live" id="syncIndicator"></span>
+        <span id="syncSourceText">Reading from live Google Sheet CSV</span>
+      </div>
+      <button id="changeSourceBtn" class="link-btn">Change Source URL</button>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav" aria-label="Filter tabs">
+      <div class="tabs-scroll" id="tabsContainer">
+        <!-- Injected via JavaScript: All, Overdue, Due Today, Completed, and Room Tabs -->
+      </div>
+    </nav>
+
+    <!-- Filter & Search Controls Bar -->
+    <section class="controls-bar">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search tasks, rooms, notes..." />
+        <button id="clearSearchBtn" class="clear-input-btn hidden" aria-label="Clear search">&times;</button>
+      </div>
+
+      <div class="filters-row">
+        <div class="control-group">
+          <label for="statusFilterSelect">Status:</label>
+          <select id="statusFilterSelect">
+            <option value="all">All Items</option>
+            <option value="pending">Pending Only</option>
+            <option value="done">Done Only</option>
+            <option value="urgent">Urgent Score &ge; 50</option>
+            <option value="overdue">Overdue (&lt; 0)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="sortSelect">Sort By:</label>
+          <select id="sortSelect">
+            <option value="urgency-desc">Urgency (High &rarr; Low)</option>
+            <option value="overdue-asc">Schedule (Most Overdue first)</option>
+            <option value="name-asc">Task Name (A &rarr; Z)</option>
+            <option value="room-asc">Room / Category (A &rarr; Z)</option>
+            <option value="interval-asc">Frequency (Shortest first)</option>
+          </select>
+        </div>
+
+        <div class="bulk-actions">
+          <button id="markFilteredDoneBtn" class="btn btn-sm btn-outline-success" title="Mark all filtered items done">
+            ✓ Mark View Done
+          </button>
+          <button id="resetAllBtn" class="btn btn-sm btn-outline-danger" title="Reset all done status back to CSV default">
+            ↺ Reset All
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tasks Grid / List Container -->
+    <section class="tasks-section">
+      <div id="loadingIndicator" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading live cleaning schedule...</p>
+      </div>
+
+      <div id="errorState" class="error-state hidden">
+        <p id="errorMessage">Failed to fetch CSV data.</p>
+        <button id="retryBtn" class="btn btn-primary btn-sm">Retry Sync</button>
+      </div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        <h3>No matching tasks found</h3>
+        <p>Try clearing filters or search criteria.</p>
+        <button id="resetFiltersBtn" class="btn btn-secondary btn-sm">Clear Filters</button>
+      </div>
+
+      <div id="tasksList" class="tasks-grid">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Footer Links & Repository Navigation -->
+    <footer class="app-footer">
+      <p>CleanTrack &bull; Readonly CSV-driven PWA &bull; State safely stored in Cookies & Local Cache</p>
+      <div class="footer-links">
+        <a href="../index.xml" class="portal-link">&larr; Return to Portal Directory</a>
+        <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vQfpdQZD9w3kREdOGJ4OGvy7gK8DKBzniLpno6vf8O7uY6mfKkf9pQcQxLEQn39VPSLB7IUvFzUKHmH/pub?gid=1369551100&single=true&output=csv" target="_blank" rel="noopener">Open Raw CSV</a>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Comment / Notes Modal -->
+  <div id="commentModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="commentModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="commentModalTitle">Task Comments &amp; Notes</h3>
+        <button class="modal-close" id="closeCommentModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-task-context" id="modalTaskInfo"></p>
+
+        <div class="comments-history" id="commentsHistoryList">
+          <!-- List of existing comments -->
+        </div>
+
+        <form id="commentForm">
+          <label for="newCommentInput">Add Note / Comment for this task:</label>
+          <textarea id="newCommentInput" rows="3" placeholder="e.g. Needs new sponge, deep scrubbed, replaced filter..."></textarea>
+          <div class="modal-actions">
+            <button type="button" id="deleteCommentsBtn" class="btn btn-danger btn-sm">Clear Notes</button>
+            <button type="submit" class="btn btn-primary btn-sm">Save Note</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Log & History Modal with CSV / Text Export -->
+  <div id="logModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="logModalTitle">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h3 id="logModalTitle">Activity History &amp; Logs</h3>
+          <p class="modal-subtitle">Log of completed tasks, comments, and resets recorded daily</p>
+        </div>
+        <button class="modal-close" id="closeLogModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="log-toolbar">
+          <div class="log-stats">
+            Total entries: <strong id="logCountDisplay">0</strong>
+          </div>
+          <div class="log-actions">
+            <button id="exportCsvBtn" class="btn btn-sm btn-outline-primary">
+              📥 Export CSV
+            </button>
+            <button id="exportTxtBtn" class="btn btn-sm btn-outline-secondary">
+              📄 Export Text
+            </button>
+            <button id="clearLogsBtn" class="btn btn-sm btn-outline-danger">
+              🗑️ Clear Logs
+            </button>
+          </div>
+        </div>
+
+        <div class="log-list-container" id="logListContainer">
+          <!-- Dynamic log entries grouped by date -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change CSV Source Modal -->
+  <div id="sourceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="sourceModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="sourceModalTitle">Custom CSV Data Source</h3>
+        <button class="modal-close" id="closeSourceModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="source-hint">The app automatically fetches the default published Google Sheet. You can specify an alternate CSV link or test URL below:</p>
+        <div class="input-field-group">
+          <label for="customCsvUrlInput">CSV URL:</label>
+          <input type="url" id="customCsvUrlInput" class="text-input" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="restoreDefaultUrlBtn" class="btn btn-secondary btn-sm">Default Link</button>
+          <button type="button" id="saveCustomUrlBtn" class="btn btn-primary btn-sm">Save &amp; Reload</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
