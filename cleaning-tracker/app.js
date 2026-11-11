@@ -218,26 +218,19 @@ function calculateLiveTaskStatus(task) {
     };
   }
 
-  // Use raw values or calculate based on date
-  // Over schedule convention in sheet: negative means overdue (e.g. -1 is 1 day overdue), positive or zero means days remaining or due.
-  // Delay days: positive means overdue delay.
-  // Urgency score: 0 to 100+
-  let calculatedUrgency = task.rawUrgency;
-  let delay = task.rawDelayDays;
+  // User requirement: In the overschedule column, ignore the negative numbers. They imply no delay.
+  // Delay days: positive numbers indicate delay, while negative numbers imply no delay (0).
+  const positiveOverSchedule = task.rawOverSchedule > 0 ? task.rawOverSchedule : 0;
+  const positiveDelayDays = task.rawDelayDays > 0 ? task.rawDelayDays : 0;
 
-  // If raw urgency is 0 or empty, infer from over schedule
+  let delay = positiveDelayDays || positiveOverSchedule;
+  let calculatedUrgency = task.rawUrgency;
+
   if (!calculatedUrgency) {
-    if (task.rawOverSchedule < 0) {
-      // Overdue! (e.g. -3 on a 3 day cycle is 100% overdue)
-      const daysLate = Math.abs(task.rawOverSchedule);
-      calculatedUrgency = Math.min(100, Math.round((daysLate / task.everyXDays) * 100));
-      delay = daysLate;
-    } else if (task.rawOverSchedule === 0) {
-      calculatedUrgency = 50; // Due today
-      delay = 0;
+    if (delay > 0) {
+      calculatedUrgency = Math.min(100, Math.round((delay / task.everyXDays) * 100));
     } else {
-      calculatedUrgency = 10;
-      delay = 0;
+      calculatedUrgency = 0;
     }
   }
 
@@ -245,11 +238,11 @@ function calculateLiveTaskStatus(task) {
   let statusClass = 'status-ok';
   let urgencyClass = 'urgency-low';
 
-  if (calculatedUrgency >= 80 || delay >= 2 || task.rawOverSchedule <= -2) {
+  if (delay >= 2 || calculatedUrgency >= 80) {
     statusLabel = 'Urgent / Overdue';
     statusClass = 'status-urgent';
     urgencyClass = 'urgency-high';
-  } else if (calculatedUrgency >= 40 || task.rawOverSchedule <= 0) {
+  } else if (delay > 0 || calculatedUrgency >= 40) {
     statusLabel = 'Due Soon';
     statusClass = 'status-due';
     urgencyClass = 'urgency-medium';
@@ -258,7 +251,7 @@ function calculateLiveTaskStatus(task) {
   return {
     isDone: false,
     doneDate: null,
-    daysOverdue: delay || (task.rawOverSchedule < 0 ? Math.abs(task.rawOverSchedule) : 0),
+    daysOverdue: delay,
     urgencyScore: calculatedUrgency,
     statusLabel: statusLabel,
     statusClass: statusClass,
@@ -349,6 +342,26 @@ async function fetchScheduleData() {
 // ==========================================
 // UI Rendering
 // ==========================================
+function openDrawer() {
+  const drawer = document.getElementById('sideDrawer');
+  const backdrop = document.getElementById('drawerBackdrop');
+  if (drawer && backdrop) {
+    drawer.classList.add('open');
+    backdrop.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeDrawer() {
+  const drawer = document.getElementById('sideDrawer');
+  const backdrop = document.getElementById('drawerBackdrop');
+  if (drawer && backdrop) {
+    drawer.classList.remove('open');
+    backdrop.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+}
+
 function renderApp() {
   renderStats();
   renderTabs();
@@ -377,8 +390,13 @@ function renderStats() {
 }
 
 function renderTabs() {
-  const tabsContainer = document.getElementById('tabsContainer');
-  tabsContainer.innerHTML = '';
+  const quickContainer = document.getElementById('quickFilterItems');
+  const roomContainer = document.getElementById('roomFilterItems');
+  const currentLabel = document.getElementById('currentFilterLabel');
+  const activeHeading = document.getElementById('activeFilterHeading');
+
+  if (quickContainer) quickContainer.innerHTML = '';
+  if (roomContainer) roomContainer.innerHTML = '';
 
   // Calculate unique rooms and counts
   const roomCounts = {};
@@ -390,38 +408,56 @@ function renderTabs() {
     roomCounts[t.room] = (roomCounts[t.room] || 0) + 1;
     const st = calculateLiveTaskStatus(t);
     if (st.isDone) totalDone++;
-    else if (st.urgencyScore >= 80 || st.daysOverdue >= 2) totalOverdue++;
-    else if (st.urgencyScore >= 40) totalDue++;
+    else if (st.daysOverdue >= 2 || st.urgencyScore >= 80) totalOverdue++;
+    else if (st.daysOverdue > 0 || st.urgencyScore >= 40) totalDue++;
   });
 
   const baseTabs = [
-    { id: 'all', label: 'All Tasks', count: AppState.tasks.length },
-    { id: 'overdue', label: '⚠️ Overdue', count: totalOverdue },
-    { id: 'due', label: '⏰ Due Soon', count: totalDue },
-    { id: 'completed', label: '✓ Completed', count: totalDone }
+    { id: 'all', icon: '📋', label: 'All Tasks', count: AppState.tasks.length },
+    { id: 'overdue', icon: '⚠️', label: 'Overdue Delay', count: totalOverdue },
+    { id: 'due', icon: '⏰', label: 'Due Soon', count: totalDue },
+    { id: 'completed', icon: '✓', label: 'Completed', count: totalDone }
   ];
 
-  // Room tabs
   const roomTabs = Object.keys(roomCounts).map(room => ({
     id: 'room_' + room,
+    icon: '🚪',
     roomName: room,
     label: room,
     count: roomCounts[room]
   }));
 
-  const allTabs = [...baseTabs, ...roomTabs];
+  let currentTitle = 'All Tasks';
 
-  allTabs.forEach(tab => {
+  const createDrawerItem = (tab) => {
     const btn = document.createElement('button');
-    btn.className = `tab-btn ${AppState.activeTab === tab.id ? 'active' : ''}`;
-    btn.innerHTML = `${tab.label} <span class="tab-count">${tab.count}</span>`;
+    const isActive = AppState.activeTab === tab.id;
+    if (isActive) currentTitle = tab.label;
+
+    btn.className = `drawer-item ${isActive ? 'active' : ''}`;
+    btn.innerHTML = `
+      <span class="drawer-item-title">${tab.icon || ''} ${escapeHtml(tab.label)}</span>
+      <span class="drawer-item-count">${tab.count}</span>
+    `;
     btn.addEventListener('click', () => {
       AppState.activeTab = tab.id;
+      closeDrawer();
       renderTabs();
       renderTasks();
     });
-    tabsContainer.appendChild(btn);
-  });
+    return btn;
+  };
+
+  if (quickContainer) {
+    baseTabs.forEach(tab => quickContainer.appendChild(createDrawerItem(tab)));
+  }
+
+  if (roomContainer) {
+    roomTabs.forEach(tab => roomContainer.appendChild(createDrawerItem(tab)));
+  }
+
+  if (currentLabel) currentLabel.textContent = currentTitle;
+  if (activeHeading) activeHeading.textContent = currentTitle;
 }
 
 function getFilteredAndSortedTasks() {
@@ -480,6 +516,9 @@ function getFilteredAndSortedTasks() {
     });
 }
 
+// Track expanded task IDs for the collapsible single-line list items
+AppState.expandedTaskIds = AppState.expandedTaskIds || new Set();
+
 function renderTasks() {
   const tasksList = document.getElementById('tasksList');
   const emptyState = document.getElementById('emptyState');
@@ -496,97 +535,148 @@ function renderTasks() {
   filteredTasks.forEach(task => {
     const status = calculateLiveTaskStatus(task);
     const comments = AppState.commentsState[task.id] || [];
-    const latestComment = comments.length > 0 ? comments[comments.length - 1] : null;
+    const isExpanded = AppState.expandedTaskIds.has(task.id);
 
-    const card = document.createElement('div');
-    let borderClass = '';
-    if (status.isDone) borderClass = 'is-completed';
-    else if (status.urgencyClass === 'urgency-high') borderClass = 'is-urgent';
-    else if (status.urgencyClass === 'urgency-medium') borderClass = 'is-warning';
+    const row = document.createElement('div');
+    let stateClass = '';
+    if (status.isDone) stateClass = 'is-completed';
+    else if (status.urgencyClass === 'urgency-high') stateClass = 'is-urgent';
+    else if (status.urgencyClass === 'urgency-medium') stateClass = 'is-warning';
 
-    card.className = `task-card ${borderClass}`;
-    card.id = `card_${task.id}`;
+    row.className = `task-row ${stateClass} ${isExpanded ? 'expanded' : ''}`;
+    row.id = `row_${task.id}`;
 
-    card.innerHTML = `
-      <div>
-        <div class="task-card-header">
-          <div class="task-meta-top">
-            <span class="room-badge">${escapeHtml(task.room)}</span>
-            <span class="urgency-badge ${status.urgencyClass}">
-              ${status.isDone ? 'DONE' : `Urgency: ${status.urgencyScore}`}
-            </span>
-          </div>
-        </div>
-
-        <h3 class="task-title">
-          <span>${escapeHtml(task.name)}</span>
-        </h3>
-
-        <div class="task-details">
-          <div class="detail-item">
-            <span class="detail-label">Frequency</span>
-            <span class="detail-value">Every ${task.everyXDays} day${task.everyXDays > 1 ? 's' : ''}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Last Cleaned</span>
-            <span class="detail-value">${escapeHtml(status.effectiveLastCleaning)}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Schedule Status</span>
-            <span class="detail-value" style="color: ${status.isDone ? 'var(--success)' : (status.daysOverdue > 0 ? 'var(--danger)' : 'inherit')}">
-              ${status.isDone ? 'Completed Today' : (status.daysOverdue > 0 ? `${status.daysOverdue} days overdue` : 'On track')}
-            </span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Urgency Score</span>
-            <span class="detail-value">${status.isDone ? '0 (Clean)' : status.urgencyScore + '/100'}</span>
-          </div>
-        </div>
-
-        ${latestComment ? `
-          <div class="task-comment-preview" title="Latest note">
-            <span>"${escapeHtml(latestComment.text)}"</span>
-            <small style="margin-left: 0.5rem; opacity: 0.7;">${latestComment.dateStr || ''}</small>
-          </div>
-        ` : ''}
-      </div>
-
-      <div class="task-actions">
-        <button class="btn-done ${status.isDone ? 'completed' : ''}" data-task-id="${task.id}" aria-label="Toggle completed">
+    // Single-line compact row header + details panel
+    row.innerHTML = `
+      <div class="row-main" data-task-id="${task.id}">
+        <button class="btn-row-done ${status.isDone ? 'completed' : ''}" data-task-id="${task.id}" aria-label="Mark task done" title="${status.isDone ? 'Marked complete (click to undo)' : 'Mark task complete'}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span>${status.isDone ? 'Marked Done' : 'Mark Done'}</span>
         </button>
 
-        <button class="btn-comment ${comments.length > 0 ? 'has-notes' : ''}" data-task-id="${task.id}" title="Task notes & comments">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        <div class="row-info" title="Click to view details">
+          <div class="row-title-line">
+            <span class="row-title ${status.isDone ? 'title-done' : ''}">${escapeHtml(task.name)}</span>
+            <span class="row-room-badge">${escapeHtml(task.room)}</span>
+            ${comments.length > 0 ? `<span class="row-comment-indicator" title="${comments.length} notes">💬 ${comments.length}</span>` : ''}
+          </div>
+          <div class="row-sub-line">
+            <span class="row-sub-text">Every ${task.everyXDays}d &bull; Last: ${escapeHtml(status.effectiveLastCleaning)}</span>
+            ${status.isDone
+              ? '<span class="status-pill status-pill-done">Done</span>'
+              : (status.daysOverdue > 0
+                  ? `<span class="status-pill status-pill-urgent">+${status.daysOverdue}d delay</span>`
+                  : '<span class="status-pill status-pill-ok">On Track</span>'
+                )
+            }
+          </div>
+        </div>
+
+        <div class="row-expand-arrow" title="Toggle full details">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-          <span>${comments.length > 0 ? comments.length : 'Note'}</span>
-        </button>
+        </div>
+      </div>
 
-        ${status.isDone ? `
-          <button class="btn-reset-single" data-task-id="${task.id}" title="Reset status to CSV original">
-            ↺
-          </button>
+      <div class="row-details ${isExpanded ? 'open' : ''}">
+        <div class="details-grid">
+          <div class="detail-box">
+            <span class="d-label">Room / Location</span>
+            <span class="d-val">${escapeHtml(task.room)}</span>
+          </div>
+          <div class="detail-box">
+            <span class="d-label">Frequency Cycle</span>
+            <span class="d-val">Every ${task.everyXDays} day${task.everyXDays > 1 ? 's' : ''}</span>
+          </div>
+          <div class="detail-box">
+            <span class="d-label">Last Cleaned</span>
+            <span class="d-val">${escapeHtml(status.effectiveLastCleaning)}</span>
+          </div>
+          <div class="detail-box">
+            <span class="d-label">Delay Status</span>
+            <span class="d-val" style="color: ${status.isDone ? 'var(--success)' : (status.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-secondary)')}">
+              ${status.isDone ? 'Cleaned Today' : (status.daysOverdue > 0 ? `${status.daysOverdue} days overdue` : 'No delay (On schedule)')}
+            </span>
+          </div>
+          <div class="detail-box">
+            <span class="d-label">Urgency Score</span>
+            <span class="d-val">${status.isDone ? '0' : status.urgencyScore + '/100'}</span>
+          </div>
+        </div>
+
+        ${comments.length > 0 ? `
+          <div class="details-notes-preview">
+            <strong>Notes (${comments.length}):</strong>
+            <ul class="compact-notes-list">
+              ${comments.slice(-2).map(c => `<li>"${escapeHtml(c.text)}" <small>(${c.dateStr || ''})</small></li>`).join('')}
+            </ul>
+          </div>
         ` : ''}
+
+        <div class="row-actions-bar">
+          <button class="btn btn-sm btn-outline-primary btn-action-comment" data-task-id="${task.id}">
+            💬 Notes &amp; Comments (${comments.length})
+          </button>
+          ${status.isDone ? `
+            <button class="btn btn-sm btn-outline-danger btn-action-reset" data-task-id="${task.id}">
+              ↺ Reset to CSV Default
+            </button>
+          ` : `
+            <button class="btn btn-sm btn-success btn-action-done" data-task-id="${task.id}">
+              ✓ Mark Complete
+            </button>
+          `}
+        </div>
       </div>
     `;
 
-    // Event listeners for card buttons
-    const doneBtn = card.querySelector('.btn-done');
-    doneBtn.addEventListener('click', () => toggleTaskDone(task));
+    // Click handler for toggle mark done directly from the list item icon
+    const doneBtn = row.querySelector('.btn-row-done');
+    doneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleTaskDone(task);
+    });
 
-    const commentBtn = card.querySelector('.btn-comment');
-    commentBtn.addEventListener('click', () => openCommentModal(task));
+    // Click on row main expands/collapses detailed view
+    const rowMain = row.querySelector('.row-main');
+    rowMain.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-row-done')) return;
+      if (AppState.expandedTaskIds.has(task.id)) {
+        AppState.expandedTaskIds.delete(task.id);
+      } else {
+        AppState.expandedTaskIds.add(task.id);
+      }
+      renderTasks();
+    });
 
-    const resetSingleBtn = card.querySelector('.btn-reset-single');
-    if (resetSingleBtn) {
-      resetSingleBtn.addEventListener('click', () => resetTaskStatus(task));
+    // Detailed actions
+    const commentBtn = row.querySelector('.btn-action-comment');
+    if (commentBtn) {
+      commentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCommentModal(task);
+      });
     }
 
-    tasksList.appendChild(card);
+    const resetBtn = row.querySelector('.btn-action-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetTaskStatus(task);
+      });
+    }
+
+    const actionDoneBtn = row.querySelector('.btn-action-done');
+    if (actionDoneBtn) {
+      actionDoneBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleTaskDone(task);
+      });
+    }
+
+    tasksList.appendChild(row);
   });
 }
 
@@ -987,6 +1077,34 @@ function setupEventListeners() {
   document.getElementById('exportCsvBtn').addEventListener('click', exportLogsToCSV);
   document.getElementById('exportTxtBtn').addEventListener('click', exportLogsToTXT);
   document.getElementById('clearLogsBtn').addEventListener('click', clearAllLogs);
+
+  // Hamburger drawer navigation
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+  const drawerBackdrop = document.getElementById('drawerBackdrop');
+  const openMenuPillBtn = document.getElementById('openMenuPillBtn');
+
+  if (hamburgerBtn) hamburgerBtn.addEventListener('click', openDrawer);
+  if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+  if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+  if (openMenuPillBtn) openMenuPillBtn.addEventListener('click', openDrawer);
+
+  const drawerOpenLogsBtn = document.getElementById('drawerOpenLogsBtn');
+  if (drawerOpenLogsBtn) {
+    drawerOpenLogsBtn.addEventListener('click', () => {
+      closeDrawer();
+      openLogModal();
+    });
+  }
+
+  const drawerOpenSourceBtn = document.getElementById('drawerOpenSourceBtn');
+  if (drawerOpenSourceBtn) {
+    drawerOpenSourceBtn.addEventListener('click', () => {
+      closeDrawer();
+      customCsvUrlInput.value = AppState.csvSourceUrl;
+      sourceModal.classList.remove('hidden');
+    });
+  }
 
   // Custom Source Modal
   const sourceModal = document.getElementById('sourceModal');

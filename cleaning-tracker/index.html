@@ -20,17 +20,25 @@
 
   <header class="app-header">
     <div class="header-inner">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-          </svg>
-        </div>
-        <div>
-          <h1>CleanTrack</h1>
-          <p class="subtitle">Live CSV Cleaning Schedule</p>
+      <div class="brand-group">
+        <button id="hamburgerBtn" class="btn btn-hamburger" aria-label="Open Room Navigation Menu" title="Open Rooms Menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <div>
+            <h1>CleanTrack</h1>
+            <p class="subtitle" id="activeFilterHeading">All Rooms</p>
+          </div>
         </div>
       </div>
+
       <div class="header-actions">
         <button id="refreshBtn" class="btn btn-icon" title="Sync latest CSV data" aria-label="Sync CSV">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,7 +56,7 @@
             <line x1="16" y1="17" x2="8" y2="17"></line>
             <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
-          <span class="btn-label-desktop">History</span>
+          <span class="btn-label-desktop">Logs</span>
           <span id="logBadge" class="badge-pill hidden">0</span>
         </button>
         <button id="themeToggleBtn" class="btn btn-icon" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">
@@ -58,11 +66,46 @@
     </div>
   </header>
 
+  <!-- Side Navigation Drawer for Mobile & Desktop -->
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="sideDrawer" class="side-drawer" aria-label="Side menu navigation">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <span class="drawer-icon">🧹</span>
+        <h3>Cleaning Rooms</h3>
+      </div>
+      <button id="closeDrawerBtn" class="btn-close-drawer" aria-label="Close menu">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">Quick Views</div>
+        <div class="drawer-items" id="quickFilterItems">
+          <!-- Injected via JavaScript: All, Overdue, Due Soon, Completed -->
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">Rooms &amp; Areas</div>
+        <div class="drawer-items" id="roomFilterItems">
+          <!-- Injected via JavaScript: Kitchen, Toilet, Bathroom, Bedroom, Office -->
+        </div>
+      </div>
+
+      <div class="drawer-section drawer-meta-links">
+        <div class="drawer-section-title">App Tools</div>
+        <button id="drawerOpenLogsBtn" class="drawer-link-btn">📜 View Activity History</button>
+        <button id="drawerOpenSourceBtn" class="drawer-link-btn">⚙️ Change CSV Link</button>
+        <a href="../index.xml" class="drawer-link-btn">📁 Portal Directory</a>
+      </div>
+    </div>
+  </aside>
+
   <main class="container">
     <!-- Meta Bar with Last Sync & Stats -->
     <section class="stats-grid">
       <div class="stat-card">
-        <span class="stat-label">Total Tasks</span>
+        <span class="stat-label">Total</span>
         <span id="totalTasksCount" class="stat-value">0</span>
       </div>
       <div class="stat-card stat-urgent">
@@ -70,11 +113,11 @@
         <span id="urgentTasksCount" class="stat-value">0</span>
       </div>
       <div class="stat-card stat-success">
-        <span class="stat-label">Done Today</span>
+        <span class="stat-label">Completed</span>
         <span id="completedTasksCount" class="stat-value">0</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Last Synced</span>
+        <span class="stat-label">Last Sync</span>
         <span id="lastSyncTime" class="stat-value-sub">Never</span>
       </div>
     </section>
@@ -88,12 +131,15 @@
       <button id="changeSourceBtn" class="link-btn">Change Source URL</button>
     </div>
 
-    <!-- Navigation Tabs -->
-    <nav class="tabs-nav" aria-label="Filter tabs">
-      <div class="tabs-scroll" id="tabsContainer">
-        <!-- Injected via JavaScript: All, Overdue, Due Today, Completed, and Room Tabs -->
+    <!-- Active Filter Indicator Pill on Mobile -->
+    <div class="filter-pill-bar">
+      <div class="active-filter-indicator">
+        Filter: <strong id="currentFilterLabel">All Tasks</strong>
       </div>
-    </nav>
+      <button id="openMenuPillBtn" class="pill-btn">
+        <span>Rooms / Filters</span> &rarr;
+      </button>
+    </div>
 
     <!-- Filter & Search Controls Bar -->
     <section class="controls-bar">
@@ -162,8 +208,8 @@
         <button id="resetFiltersBtn" class="btn btn-secondary btn-sm">Clear Filters</button>
       </div>
 
-      <div id="tasksList" class="tasks-grid">
-        <!-- Rendered dynamically via JavaScript -->
+      <div id="tasksList" class="tasks-list-view">
+        <!-- Rendered dynamically via JavaScript as compact single line list items -->
       </div>
     </section>
 
